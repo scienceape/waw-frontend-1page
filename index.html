@@ -1,0 +1,264 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    :waw:
+{% endblock %}
+
+{% block main %}
+
+
+    <!-- TODO: better get this from backend after checking the actual url ?-->
+    <div>
+        <label for="wawcountryselect">Select a different country:</label>
+        <select id="wawcountryselect" class="selectpicker countrypicker" data-default="US">
+            <option>US</option>
+        </select>
+    </div>
+
+    <form id="wawform" action="/" method="post">
+
+        <div class="form-group rectangle">
+            <label for="system_select">System:</label>
+            <select class="form-control" id="system_select" name="system">
+                <option selected disabled >please select a system</option>
+                {%  for system in systemNames %}
+                    <option value="{{ system }}">{{ system }}</option>
+                {%  endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="band_select">Band:</label>
+            <select class="form-control" id="band_select" name="band"></select>
+
+        </div>
+        <div class="form-group">
+            <label for="numberdevices_select"># Devices:</label>
+            <select class="form-control" id="numberdevices_select" name="devices"></select>
+        </div>
+        <div class="form-group">
+            <label for="rackmount_select">Rack Mounted:</label>
+            <select class="form-control" id="rackmount_select" name="rackmount"></select>
+        </div>
+        <div class="form-group">
+            <label for="remoteantennas_select">Remote Antennas?</label>
+            <select class="form-control" id="remoteantennas_select" name="remoteantennas">
+                <option selected disabled >No</option>
+            </select>
+        </div>
+            <div class="form-group">
+            <label for="cablelength_select">Cable Length:</label>
+            <select class="form-control" id="cablelength_select" name="cable">
+                <option selected disabled >None</option>
+            </select>
+        </div>
+            <div class="form-group">
+            <label for="antennatype_select">Antenna Type:</label>
+            <select class="form-control" id="antennatype_select" name="antennatype">
+                <option selected disabled >None</option>
+            </select>
+        </div>
+        <div  class="form-group">
+            <label></label>
+            <button id ="waw-submit" class="form-control btn btn-primary" type="submit">Submit</button>
+        </div>
+
+    <!--results -->
+        <div id="resultSection" style="display:none;">
+            <table id="resultTable" class="table table-hover">
+                <thead id="resultTableHead">
+                    <tr>
+                        <th style="width: 15%" scope="col">Quantity</th>
+                        <th style="width: 30%" scope="col">Part Number</th>
+                        <th style="width: 55%" scope="col">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTableBody">
+                </tbody>
+            </table>
+            <div id="resultImages" class="text-center">
+            </div>
+            <div id="resultTableNotes" class="text-left">
+            </div>
+            <div id="returnedList" style="margin-top:3em; font-size:smaller; color:gray">
+            </div>
+        </div>
+
+    </form>
+
+
+    <script charset="utf-8" type="text/javascript">
+        $(document).ready(function(){
+            $("#system_select").change(function() {
+                let SystemConfigs = $(this).find('option:selected').text();
+                $.ajax({
+                    type: 'POST',
+                    url: "/waw/get_SystemConfigs",
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify({SystemConfigs}),
+                    success: function(result){
+                        UpdateDropdownValuesBand(result[0]);
+                        UpdateDropdownValuesDRR(result[1]);
+                        UpdateDropdownValuesCableLength(result[2]);
+                        UpdateDropdownValuesAntennaType(result[3])
+                    }
+                });
+            });
+        });
+
+        function UpdateDropdownValuesBand(result) {
+            $("#band_select").empty();
+            $("#band_select")
+                .append($("<option></option>")
+                    .attr({"value": "", "disabled": "true", "selected": "true", "required": "true"})
+                    .text("please select a band")
+                        );
+            $.each(result, function (key, value) {
+                $('#band_select')
+                    .append($("<option></option>")
+                        .attr("value", value)
+                        .text(value));
+            });
+        };
+
+        function UpdateDropdownValuesDRR(result) {
+            $("#numberdevices_select").empty();
+            let numDevices = result[0][0];
+            for (let j = 1; j <= numDevices; j++) {
+                $('#numberdevices_select').append($("<option>", {
+                    value: j,
+                    text: j.toString()
+                }));
+            }
+
+            $("#rackmount_select").empty();
+            let intRackmountable = 1;
+            let rackmountyesno = 'No';
+            for (let i = 0; i <= intRackmountable; i++) {
+                i ? rackmountyesno = 'Yes' : 'No';
+                $('#rackmount_select').append($("<option>", {
+                    value: i,
+                    text: rackmountyesno
+                }));
+            }
+
+            $("#remoteantennas_select").empty();
+            let remoteAntennas = result[0][2];
+            let intRemoteAntennas = remoteAntennas? 1 : 0;
+            let remoteantennasyesno = 'No';
+            for (let k = 0; k <= intRemoteAntennas; k++) {
+                k ? remoteantennasyesno = 'Yes' : 'No';
+                $('#remoteantennas_select').append($("<option>", {
+                    value: k,
+                    {#text: k.toString()#}
+                    text: remoteantennasyesno
+                }));
+            }
+
+
+        };
+
+        function UpdateDropdownValuesCableLength(result) {
+            $("#cablelength_select").empty();
+            $("#cablelength_select").prop("disabled", true);
+
+                $.each(result, function (key, value) {
+                    $('#cablelength_select')
+                        .append($("<option></option>")
+                            .attr("value", value)
+                            .text(value));
+                });
+
+        };
+
+        function UpdateDropdownValuesAntennaType(result) {
+            $("#antennatype_select").empty();
+            $("#antennatype_select").prop("disabled", true);
+            $.each(result, function (key, value) {
+                $('#antennatype_select')
+                    .append($("<option></option>")
+                        .attr("value", value)
+                        .text(value));
+            });
+        };
+
+        $("#wawform").on("submit", function(event){
+
+            event.preventDefault();
+            $("#resultSection").show();
+            $("#returnedList").empty();
+            $("#resultTableBody").empty();
+            $('#resultImages').empty();
+            $('#resultTableNotes').empty();
+            $.ajax({
+                type:'POST',
+                url: '/waw',
+                data:$('#wawform').serialize(),
+                success: function(result) {
+                    console.log(JSON.stringify(result));
+                    let jsonString = JSON.stringify(result);
+
+                    $.each(result.waw, function(i, obj) {
+                        $.each(obj.ItemList, function (key, value) {
+                            console.log(value)
+                            $('#resultTableBody').append(
+                                $('<tr></tr>)').append(
+                                    $('<td></td>').text(value['quantity'].toString()),
+                                    $('<td></td>').text(value['partnumber'].toString()),
+                                    $('<td></td>').text(value['description'].toString())
+                                )
+                            );
+                        });
+
+                        $.each(obj.Images, function (key, value) {
+                            $('#resultImages').append('<img src="' + value['image_url'] + '" class="img-fluid" alt="' + value['image_alt'] + '"/>');
+                        });
+
+                        $.each(obj.Notes, function (key, value) {
+                            $('#resultTableNotes').append(
+                                $('<tr></tr>)').append(
+                                    $('<td></td>').text('Note: ' + value.toString())
+                                )
+                            );
+                        });
+
+                    });
+
+                    $('#returnedList')
+                        .append($("<p></p>").text(JSON.stringify(result)));
+                }});
+
+        });
+
+
+            $("#remoteantennas_select").change(function() {
+
+                let RemoteAntenna = $(this).find('option:selected').text();
+                if (RemoteAntenna == 'Yes') {
+
+                    $("#cablelength_select").prop("disabled", false);
+                    $("#antennatype_select").prop("disabled", false);
+                }
+                else {
+                    $("#cablelength_select").val("1ft - 10ft");
+                    $("#cablelength_select")
+                        .prop("disabled", true)
+                        .prop("selected", true);
+                    $("#antennatype_select").val("Omni");
+                    $("#antennatype_select")
+                        .prop("disabled", true)
+                        .prop("selected", true);
+                }
+
+            });
+
+    </script>
+
+{#    <script>#}
+{#$(document).ready(function() {#}
+{##}
+{#$('#wawcountryselect').selectpicker();#}
+{##}
+{#    });#}
+{#    </script>#}
+
+{% endblock %}
